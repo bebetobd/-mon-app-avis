@@ -5,7 +5,10 @@
       "Bash(npm --version)",
       "Bash(vercel --version)",
       "Bash(npm run build)",
-      "Bash(npm install -g vercel)"
+      "Bash(npm install -g vercel)",
+      "Bash(vercel whoami)",
+      "Bash(vercel --prod --yes)",
+      "Bash(npm install @emailjs/browser)"
     ]
   }
 }

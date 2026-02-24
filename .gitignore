@@ -15,3 +15,5 @@ dist/
 *.swp
 *.swo
 .DS_Store
+
+.vercel
