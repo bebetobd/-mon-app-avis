@@ -11,6 +11,22 @@ const ADMIN_EMAIL         = "manwaherberttchando@gmail.com";
 const DEFAULT_PASSWORD = "HDL@2024";
 const getStoredPwd = () => localStorage.getItem("hdl_admin_pwd") || DEFAULT_PASSWORD;
 
+// ─── API ──────────────────────────────────────────────────────────────────────
+const API = "/api/feedbacks";
+
+async function apiFetch(url, options = {}) {
+  const res = await fetch(url, {
+    headers: { "Content-Type": "application/json" },
+    ...options,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Erreur ${res.status}`);
+  }
+  return res.json();
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 const CATEGORIES = {
   hopital: [
     { id: "accueil", label: "Accueil",             icon: "👋" },
@@ -220,6 +236,11 @@ export default function FeedbackApp() {
   const [selectedFeedback, setSelectedFeedback] = useState(null);
   const [liveCount, setLiveCount]               = useState(0); // pulse counter
 
+  // DB
+  const [dbLoading, setDbLoading]               = useState(false);
+  const [dbError, setDbError]                   = useState("");
+  const [dbSaving, setDbSaving]                 = useState(false);
+
   // Forgot password
   const [forgotPwd, setForgotPwd]               = useState(false);
   const [otpSent, setOtpSent]                   = useState(false);
@@ -259,16 +280,62 @@ export default function FeedbackApp() {
     setTimeout(() => { fn(); setFadeIn(true); }, 250);
   };
 
-  const handleSubmit = () => {
+  // ── Charger les avis depuis MySQL ──
+  const fetchFeedbacks = async () => {
+    try {
+      setDbLoading(true);
+      setDbError("");
+      const data = await apiFetch(API);
+      setAllFeedbacks(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setDbError("⚠️ " + err.message);
+    } finally {
+      setDbLoading(false);
+    }
+  };
+
+  // Chargement auto quand le dashboard s'ouvre + polling toutes les 20s
+  useEffect(() => {
+    if (!showDashboard || !adminAuth) return;
+    fetchFeedbacks();
+    const interval = setInterval(fetchFeedbacks, 20000);
+    return () => clearInterval(interval);
+  }, [showDashboard, adminAuth]); // eslint-disable-line
+
+  const handleSubmit = async () => {
+    const svc = SERVICES.find((s) => s.id === service);
     const feedback = {
-      id: Date.now(), mode, service, rating,
-      emoji: selectedEmoji, categoryRatings, comment, contact,
-      date: new Date().toLocaleString("fr-FR"),
+      id:            Date.now(),
+      mode,
+      service,
+      service_label: svc?.label || "",
+      rating,
+      emoji:         selectedEmoji,
+      categoryRatings,
+      comment,
+      contact,
+      date:          new Date().toLocaleString("fr-FR"),
     };
+
+    // Mise à jour locale immédiate (optimiste)
     setAllFeedbacks((prev) => [...prev, feedback]);
     setShowConfetti(true);
     transition(() => setSubmitted(true));
     setTimeout(() => setShowConfetti(false), 3500);
+
+    // Sauvegarde en base de données
+    setDbSaving(true);
+    try {
+      await apiFetch(API, {
+        method: "POST",
+        body: JSON.stringify(feedback),
+      });
+    } catch (err) {
+      console.error("Sauvegarde DB échouée :", err.message);
+      // L'avis reste dans l'état local même si la DB échoue
+    } finally {
+      setDbSaving(false);
+    }
   };
 
   const handleReset = () => {
@@ -565,6 +632,22 @@ export default function FeedbackApp() {
               <button onClick={() => transition(() => { setShowDashboard(false); setService(null); })} style={{ ...btnS, padding: "8px 14px", fontSize: 12 }}>← Accueil</button>
               <button onClick={handleAdminLogout} style={{ background: "rgba(231,76,60,0.12)", color: "#E74C3C", border: "1px solid rgba(231,76,60,0.25)", borderRadius: 14, padding: "8px 14px", fontSize: 12, fontFamily: sans, cursor: "pointer" }}>🔒</button>
             </div>
+          </div>
+
+          {/* ── ÉTAT BASE DE DONNÉES ── */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 7, background: dbError ? "rgba(231,76,60,0.1)" : "rgba(39,174,96,0.1)", border: `1px solid ${dbError ? "rgba(231,76,60,0.3)" : "rgba(39,174,96,0.3)"}`, borderRadius: 99, padding: "5px 14px" }}>
+              <span style={{ width: 7, height: 7, borderRadius: "50%", background: dbError ? "#E74C3C" : "#27AE60", display: "inline-block", animation: dbLoading ? "pulse 1s infinite" : "none" }} />
+              <span style={{ fontSize: 11, fontWeight: 700, color: dbError ? "#E74C3C" : "#27AE60", fontFamily: sans }}>
+                {dbLoading ? "Synchronisation…" : dbError ? "DB déconnectée" : "MySQL bebetobd · Connecté"}
+              </span>
+            </div>
+            {dbError && (
+              <span style={{ fontSize: 11, color: "#E74C3C" }}>{dbError}</span>
+            )}
+            <button onClick={fetchFeedbacks} style={{ ...btnS, padding: "5px 12px", fontSize: 11 }} disabled={dbLoading}>
+              {dbLoading ? "⏳" : "🔄"} Actualiser
+            </button>
           </div>
 
           {/* ── CHANGER MOT DE PASSE ── */}
