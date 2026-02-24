@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { Analytics } from "@vercel/analytics/react";
 
 const CATEGORIES = {
   hopital: [
@@ -836,7 +837,7 @@ export default function FeedbackApp() {
         )}
       </div>
 
-
+      <Analytics />
     </div>
   );
 }
