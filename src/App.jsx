@@ -1,14 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 
 const CATEGORIES = {
-  boutique: [
-    { id: "accueil", label: "Accueil", icon: "👋" },
-    { id: "conseil", label: "Conseil", icon: "💬" },
-    { id: "attente", label: "Temps d'attente", icon: "⏱️" },
-    { id: "proprete", label: "Propreté", icon: "✨" },
-    { id: "produits", label: "Qualité des produits", icon: "🛍️" },
-    { id: "prix", label: "Rapport qualité/prix", icon: "💰" },
-  ],
   hopital: [
     { id: "accueil", label: "Accueil", icon: "👋" },
     { id: "soins", label: "Qualité des soins", icon: "🩺" },
@@ -135,7 +127,7 @@ function Confetti() {
 }
 
 export default function FeedbackApp() {
-  const [mode, setMode] = useState(null); // "boutique" | "hopital"
+  const [mode, setMode] = useState("hopital");
   const [step, setStep] = useState(0);
   const [rating, setRating] = useState(0);
   const [selectedEmoji, setSelectedEmoji] = useState(null);
@@ -184,7 +176,7 @@ export default function FeedbackApp() {
 
   const handleReset = () => {
     transition(() => {
-      setMode(null);
+      setMode("hopital");
       setStep(0);
       setRating(0);
       setSelectedEmoji(null);
@@ -365,65 +357,60 @@ export default function FeedbackApp() {
             ))}
           </div>
 
-          {["boutique", "hopital"].map((m) => {
-            const cats = avgByCategory(m);
-            const count = modeCount(m);
-            if (!count) return null;
-            return (
-              <div key={m} style={{ marginBottom: 28 }}>
-                <h3 style={{ color: gold, fontSize: 16, fontWeight: 600, marginBottom: 14 }}>
-                  {m === "boutique" ? "🏪 Boutique" : "🏥 Centre Hospitalier"} — {count} avis
-                </h3>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {cats.map((cat) => (
+          {modeCount("hopital") > 0 && (
+            <div style={{ marginBottom: 28 }}>
+              <h3 style={{ color: gold, fontSize: 16, fontWeight: 600, marginBottom: 14 }}>
+                🏥 Centre Hospitalier — {modeCount("hopital")} avis
+              </h3>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {avgByCategory("hopital").map((cat) => (
+                  <div
+                    key={cat.id}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 12,
+                      fontSize: 14,
+                      color: textLight,
+                    }}
+                  >
+                    <span style={{ width: 28, textAlign: "center" }}>{cat.icon}</span>
+                    <span style={{ flex: 1 }}>{cat.label}</span>
                     <div
-                      key={cat.id}
                       style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 12,
-                        fontSize: 14,
-                        color: textLight,
+                        width: 120,
+                        height: 8,
+                        background: "rgba(255,255,255,0.08)",
+                        borderRadius: 99,
+                        overflow: "hidden",
                       }}
                     >
-                      <span style={{ width: 28, textAlign: "center" }}>{cat.icon}</span>
-                      <span style={{ flex: 1 }}>{cat.label}</span>
                       <div
                         style={{
-                          width: 120,
-                          height: 8,
-                          background: "rgba(255,255,255,0.08)",
+                          width: cat.avg !== "—" ? `${(cat.avg / 5) * 100}%` : "0%",
+                          height: "100%",
+                          background: `linear-gradient(90deg, ${gold}, ${goldDark})`,
                           borderRadius: 99,
-                          overflow: "hidden",
+                          transition: "width 0.8s ease",
                         }}
-                      >
-                        <div
-                          style={{
-                            width: cat.avg !== "—" ? `${(cat.avg / 5) * 100}%` : "0%",
-                            height: "100%",
-                            background: `linear-gradient(90deg, ${gold}, ${goldDark})`,
-                            borderRadius: 99,
-                            transition: "width 0.8s ease",
-                          }}
-                        />
-                      </div>
-                      <span
-                        style={{
-                          width: 36,
-                          textAlign: "right",
-                          fontWeight: 700,
-                          color: gold,
-                          fontSize: 13,
-                        }}
-                      >
-                        {cat.avg}/5
-                      </span>
+                      />
                     </div>
-                  ))}
-                </div>
+                    <span
+                      style={{
+                        width: 36,
+                        textAlign: "right",
+                        fontWeight: 700,
+                        color: gold,
+                        fontSize: 13,
+                      }}
+                    >
+                      {cat.avg}/5
+                    </span>
+                  </div>
+                ))}
               </div>
-            );
-          })}
+            </div>
+          )}
 
           {allFeedbacks.length > 0 && (
             <div>
@@ -449,7 +436,7 @@ export default function FeedbackApp() {
                     >
                       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
                         <span style={{ color: gold, fontSize: 12 }}>
-                          {f.mode === "boutique" ? "🏪" : "🏥"} {"⭐".repeat(f.rating)}
+                          🏥 {"⭐".repeat(f.rating)}
                         </span>
                         <span style={{ color: textMuted, fontSize: 11 }}>{f.date}</span>
                       </div>
@@ -514,123 +501,6 @@ export default function FeedbackApp() {
     );
   }
 
-  // ─── MODE SELECT ────────────────────
-  if (mode === null) {
-    return (
-      <div style={containerStyle}>
-        <div style={glowOrb("10%", "-5%", "#E8C47C", "400px")} />
-        <div style={glowOrb("70%", "80%", "#3498DB", "350px")} />
-
-        <div style={cardStyle}>
-          <div style={{ textAlign: "center", marginBottom: 8 }}>
-            <div
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 10,
-                background: "rgba(232,196,124,0.1)",
-                border: "1px solid rgba(232,196,124,0.2)",
-                borderRadius: 99,
-                padding: "8px 20px",
-                marginBottom: 24,
-              }}
-            >
-              <span style={{ fontSize: 18 }}>💎</span>
-              <span style={{ fontSize: 13, color: gold, fontWeight: 600, letterSpacing: 1.5, textTransform: "uppercase" }}>
-                Votre avis compte
-              </span>
-            </div>
-          </div>
-
-          <h1 style={{ ...heading, textAlign: "center", fontSize: 34 }}>
-            Partagez votre<br />
-            <span style={{ color: gold }}>expérience</span>
-          </h1>
-          <p style={{ ...subtext, textAlign: "center" }}>
-            Aidez-nous à améliorer nos services en quelques clics.
-            <br />
-            Sélectionnez votre type d'établissement :
-          </p>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            {[
-              { key: "boutique", icon: "🏪", title: "Boutique", desc: "Commerce & retail" },
-              { key: "hopital", icon: "🏥", title: "Centre Hospitalier", desc: "Santé & soins" },
-            ].map((opt) => (
-              <button
-                key={opt.key}
-                onClick={() => transition(() => setMode(opt.key))}
-                style={{
-                  background: "rgba(255,255,255,0.03)",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                  borderRadius: 18,
-                  padding: "24px 28px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 20,
-                  cursor: "pointer",
-                  transition: "all 0.3s ease",
-                  textAlign: "left",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "rgba(232,196,124,0.08)";
-                  e.currentTarget.style.borderColor = "rgba(232,196,124,0.3)";
-                  e.currentTarget.style.transform = "translateX(4px)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "rgba(255,255,255,0.03)";
-                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
-                  e.currentTarget.style.transform = "translateX(0)";
-                }}
-              >
-                <div
-                  style={{
-                    width: 56,
-                    height: 56,
-                    borderRadius: 16,
-                    background: "rgba(232,196,124,0.1)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: 28,
-                    flexShrink: 0,
-                  }}
-                >
-                  {opt.icon}
-                </div>
-                <div>
-                  <div style={{ fontSize: 18, fontWeight: 600, color: textLight, fontFamily: font }}>
-                    {opt.title}
-                  </div>
-                  <div style={{ fontSize: 13, color: textMuted, marginTop: 2 }}>{opt.desc}</div>
-                </div>
-                <div style={{ marginLeft: "auto", color: textMuted, fontSize: 20 }}>→</div>
-              </button>
-            ))}
-          </div>
-
-          {allFeedbacks.length > 0 && (
-            <div style={{ textAlign: "center", marginTop: 24 }}>
-              <button
-                onClick={() => transition(() => setShowDashboard(true))}
-                style={{
-                  ...btnSecondary,
-                  fontSize: 13,
-                  padding: "10px 22px",
-                  borderRadius: 99,
-                }}
-              >
-                📊 Tableau de bord ({allFeedbacks.length} avis)
-              </button>
-            </div>
-          )}
-        </div>
-
-
-      </div>
-    );
-  }
-
   // ─── STEPS ──────────────────────────
   const categories = CATEGORIES[mode];
 
@@ -653,8 +523,7 @@ export default function FeedbackApp() {
             <button
               onClick={() =>
                 transition(() => {
-                  if (step === 0) setMode(null);
-                  else setStep(step - 1);
+                  if (step > 0) setStep(step - 1);
                 })
               }
               style={{

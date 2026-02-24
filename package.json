@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "Application de collecte d'avis clients - Boutique & Centre Hospitalier",
+  "description": "Application de collecte d'avis clients - Centre Hospitalier",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
