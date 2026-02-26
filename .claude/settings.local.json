@@ -8,7 +8,9 @@
       "Bash(npm install -g vercel)",
       "Bash(vercel whoami)",
       "Bash(vercel --prod --yes)",
-      "Bash(npm install @emailjs/browser)"
+      "Bash(npm install @emailjs/browser)",
+      "Bash(docker network ls)",
+      "Bash(python3 -m json.tool)"
     ]
   }
 }
